@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABYSSAL DEPTHS — Game Design Document</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #050508;
+    --abyss: #09090f;
+    --shadow: #0e0e18;
+    --deep: #14141f;
+    --muted: #1e1e2e;
+    --slate: #2a2a3e;
+    --border: #3a3a52;
+    --dim: #5a5a7a;
+    --fog: #8888aa;
+    --pale: #c8c8d8;
+    --light: #e8e0f0;
+    --white: #f5f0ff;
+    --crimson: #8b1a1a;
+    --blood: #c0392b;
+    --ember: #e05a2b;
+    --gold: #c9a84c;
+    --gold-bright: #e8c86a;
+    --void-blue: #1a1a4e;
+    --arcane: #4a2a8a;
+    --ether: #6a3ac0;
+    --ether-bright: #9a6ae0;
+    --silver: #a0a8c0;
+    --rune: #2a4a3a;
+    --jade: #2a8a5a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--pale);
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size: 17px;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  /* NOISE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.6;
+  }
+
+  /* VIGNETTE */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(5,5,8,0.85) 100%);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* SIDEBAR NAV */
+  nav {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 260px;
+    background: rgba(9,9,15,0.97);
+    border-right: 1px solid var(--border);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    padding: 40px 0;
+    overflow-y: auto;
+  }
+
+  nav::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent, var(--ether) 30%, var(--blood) 70%, transparent);
+    opacity: 0.5;
+  }
+
+  .nav-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--dim);
+    text-transform: uppercase;
+    padding: 0 28px 24px;
+    border-bottom: 1px solid var(--slate);
+    margin-bottom: 24px;
+  }
+
+  .nav-logo {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 15px;
+    color: var(--gold);
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+
+  nav a {
+    display: block;
+    padding: 8px 28px;
+    color: var(--dim);
+    text-decoration: none;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    border-left: 2px solid transparent;
+    position: relative;
+  }
+
+  nav a:hover {
+    color: var(--gold);
+    border-left-color: var(--gold);
+    background: rgba(201,168,76,0.05);
+  }
+
+  nav a.active {
+    color: var(--gold-bright);
+    border-left-color: var(--ether-bright);
+  }
+
+  .nav-section {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--border);
+    text-transform: uppercase;
+    padding: 16px 28px 6px;
+  }
+
+  /* MAIN CONTENT */
+  main {
+    margin-left: 260px;
+    min-height: 100vh;
+  }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 80px 60px;
+    text-align: center;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% 60%, rgba(74,42,138,0.15) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 20% 40%, rgba(139,26,26,0.1) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 80% 80%, rgba(26,26,78,0.12) 0%, transparent 60%),
+      linear-gradient(to bottom, var(--void) 0%, var(--abyss) 100%);
+  }
+
+  /* Animated rune circles */
+  .rune-circle {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid;
+    animation: rotateSlow linear infinite;
+  }
+
+  .rune-circle:nth-child(1) {
+    width: 600px; height: 600px;
+    border-color: rgba(74,42,138,0.12);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation-duration: 80s;
+  }
+
+  .rune-circle:nth-child(2) {
+    width: 420px; height: 420px;
+    border-color: rgba(139,26,26,0.1);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation-duration: 55s;
+    animation-direction: reverse;
+  }
+
+  .rune-circle:nth-child(3) {
+    width: 260px; height: 260px;
+    border-color: rgba(201,168,76,0.08);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation-duration: 35s;
+  }
+
+  @keyframes rotateSlow {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  .hero-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 0.45em;
+    color: var(--blood);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 2;
+    animation: fadeInUp 1s ease both;
+  }
+
+  .hero-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(48px, 7vw, 96px);
+    font-weight: 900;
+    line-height: 0.9;
+    color: var(--white);
+    position: relative;
+    z-index: 2;
+    animation: fadeInUp 1s 0.2s ease both;
+    text-shadow:
+      0 0 80px rgba(74,42,138,0.4),
+      0 0 160px rgba(139,26,26,0.2);
+    letter-spacing: -0.02em;
+  }
+
+  .hero-title span {
+    display: block;
+    color: var(--gold);
+    font-size: 0.45em;
+    letter-spacing: 0.35em;
+    text-shadow: 0 0 40px rgba(201,168,76,0.5);
+    margin-top: 12px;
+  }
+
+  .hero-subtitle {
+    font-size: 18px;
+    color: var(--fog);
+    max-width: 620px;
+    margin: 32px auto 0;
+    font-style: italic;
+    position: relative;
+    z-index: 2;
+    animation: fadeInUp 1s 0.4s ease both;
+    font-weight: 300;
+  }
+
+  .hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 36px;
+    position: relative;
+    z-index: 2;
+    animation: fadeInUp 1s 0.6s ease both;
+  }
+
+  .tag {
+    padding: 5px 14px;
+    border: 1px solid var(--border);
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  .tag.crimson { border-color: rgba(139,26,26,0.4); color: var(--blood); }
+  .tag.arcane { border-color: rgba(74,42,138,0.4); color: var(--ether-bright); }
+  .tag.gold { border-color: rgba(201,168,76,0.3); color: var(--gold); }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--border);
+    text-transform: uppercase;
+    z-index: 2;
+    animation: fadeInUp 1s 1s ease both;
+  }
+
+  .scroll-line {
+    width: 1px;
+    height: 48px;
+    background: linear-gradient(to bottom, var(--border), transparent);
+    animation: scrollPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.3; transform: scaleY(1); }
+    50% { opacity: 1; transform: scaleY(1.2); }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* SECTIONS */
+  section {
+    padding: 80px 60px;
+    border-bottom: 1px solid var(--slate);
+    position: relative;
+  }
+
+  section::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent, var(--ether) 50%, transparent);
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+
+  section:hover::before { opacity: 0.3; }
+
+  .section-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 0.4em;
+    color: var(--ether);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: var(--ether);
+    opacity: 0.5;
+  }
+
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(26px, 3vw, 40px);
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 32px;
+    line-height: 1.15;
+  }
+
+  .section-title em {
+    color: var(--gold);
+    font-style: normal;
+  }
+
+  .section-body {
+    font-size: 17px;
+    color: var(--pale);
+    max-width: 780px;
+    line-height: 1.85;
+  }
+
+  .section-body p + p { margin-top: 16px; }
+
+  /* PILLARS GRID */
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    margin-top: 48px;
+    border: 1px solid var(--border);
+  }
+
+  .pillar {
+    background: var(--abyss);
+    padding: 32px 28px;
+    transition: background 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pillar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--pillar-color, var(--ether));
+    transform: scaleX(0);
+    transition: transform 0.4s;
+  }
+
+  .pillar:hover { background: var(--shadow); }
+  .pillar:hover::before { transform: scaleX(1); }
+
+  .pillar-num {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 36px;
+    color: var(--pillar-color, var(--ether));
+    opacity: 0.2;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+
+  .pillar-title {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    color: var(--light);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .pillar-desc {
+    font-size: 15px;
+    color: var(--fog);
+    line-height: 1.65;
+  }
+
+  /* CLASSES */
+  .classes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 48px;
+  }
+
+  .class-card {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    border: 1px solid var(--border);
+    background: var(--abyss);
+    overflow: hidden;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .class-card:hover {
+    border-color: var(--class-color, var(--ether));
+    background: var(--shadow);
+  }
+
+  .class-accent {
+    background: var(--class-color, var(--ether));
+    opacity: 0.08;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    position: relative;
+    border-right: 1px solid var(--border);
+    transition: opacity 0.3s;
+  }
+
+  .class-card:hover .class-accent {
+    opacity: 0.15;
+  }
+
+  .class-num {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 42px;
+    color: var(--class-color, var(--ether));
+    opacity: 0.4;
+    line-height: 1;
+    position: absolute;
+    bottom: 12px;
+    right: 16px;
+  }
+
+  .class-name {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    color: var(--class-color, var(--ether));
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    z-index: 1;
+    position: relative;
+  }
+
+  .class-archetype {
+    font-size: 12px;
+    color: var(--dim);
+    font-style: italic;
+    margin-top: 4px;
+    z-index: 1;
+    position: relative;
+  }
+
+  .class-body {
+    padding: 28px 32px;
+  }
+
+  .class-desc {
+    font-size: 16px;
+    color: var(--fog);
+    line-height: 1.7;
+  }
+
+  .class-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+  }
+
+  .class-tag {
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  /* COMBAT LIST */
+  .combat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-top: 48px;
+  }
+
+  .combat-block {
+    border-left: 2px solid var(--block-color, var(--ether));
+    padding: 20px 24px;
+    background: rgba(14,14,24,0.5);
+  }
+
+  .combat-block-title {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    color: var(--block-color, var(--ether));
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .combat-items {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .combat-items li {
+    font-size: 15px;
+    color: var(--fog);
+    padding-left: 16px;
+    position: relative;
+  }
+
+  .combat-items li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--block-color, var(--ether));
+    opacity: 0.5;
+    font-size: 11px;
+    top: 3px;
+  }
+
+  /* BOSSES */
+  .boss-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-top: 48px;
+  }
+
+  .boss-card {
+    border: 1px solid var(--border);
+    padding: 28px;
+    background: var(--abyss);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .boss-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, rgba(139,26,26,0.1), transparent 70%);
+    transition: all 0.4s;
+  }
+
+  .boss-card:hover {
+    border-color: rgba(139,26,26,0.4);
+  }
+
+  .boss-card:hover::after {
+    width: 160px; height: 160px;
+  }
+
+  .boss-name {
+    font-family: 'Cinzel', serif;
+    font-size: 16px;
+    color: var(--light);
+    margin-bottom: 6px;
+  }
+
+  .boss-title {
+    font-size: 13px;
+    color: var(--blood);
+    font-style: italic;
+    margin-bottom: 12px;
+  }
+
+  .boss-desc {
+    font-size: 15px;
+    color: var(--fog);
+    line-height: 1.65;
+  }
+
+  .boss-phases {
+    display: flex;
+    gap: 6px;
+    margin-top: 14px;
+  }
+
+  .phase-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--blood);
+    opacity: 0.4;
+  }
+
+  .phase-dot.active { opacity: 1; }
+
+  /* FACTIONS */
+  .faction-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--border);
+    margin-top: 48px;
+    border: 1px solid var(--border);
+  }
+
+  .faction-item {
+    background: var(--abyss);
+    padding: 20px 24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    transition: background 0.3s;
+  }
+
+  .faction-item:hover { background: var(--shadow); }
+
+  .faction-icon {
+    width: 36px; height: 36px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    color: var(--blood);
+  }
+
+  .faction-name {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--light);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .faction-desc {
+    font-size: 14px;
+    color: var(--dim);
+    line-height: 1.5;
+  }
+
+  /* AUDIO / VISUAL */
+  .av-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 48px;
+  }
+
+  .av-block-title {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--slate);
+  }
+
+  .av-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .av-list li {
+    font-size: 15px;
+    color: var(--fog);
+    padding-left: 20px;
+    position: relative;
+    line-height: 1.5;
+  }
+
+  .av-list li::before {
+    content: '◆';
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+    opacity: 0.35;
+    font-size: 8px;
+    top: 5px;
+  }
+
+  /* RATING SYSTEM */
+  .rank-showcase {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 32px;
+    padding: 28px;
+    border: 1px solid var(--border);
+    background: var(--abyss);
+  }
+
+  .rank-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .rank-letter {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 28px;
+    font-weight: 900;
+    width: 44px;
+    text-align: center;
+    line-height: 1;
+  }
+
+  .rank-bar-wrap {
+    flex: 1;
+    height: 4px;
+    background: var(--slate);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .rank-bar {
+    height: 100%;
+    background: var(--rank-color);
+    box-shadow: 0 0 8px var(--rank-color);
+    animation: barReveal 1.5s ease both;
+    animation-delay: var(--delay, 0s);
+  }
+
+  @keyframes barReveal {
+    from { width: 0; }
+    to { width: var(--w); }
+  }
+
+  .rank-desc {
+    width: 200px;
+    font-size: 13px;
+    color: var(--dim);
+    font-style: italic;
+  }
+
+  /* DUNGEON SYSTEMS */
+  .dungeon-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 48px;
+  }
+
+  .dungeon-card {
+    border: 1px solid var(--border);
+    padding: 22px 20px;
+    background: var(--abyss);
+    position: relative;
+    transition: border-color 0.3s;
+  }
+
+  .dungeon-card:hover {
+    border-color: rgba(74,42,138,0.4);
+  }
+
+  .dungeon-icon {
+    font-size: 24px;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .dungeon-card-title {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--ether-bright);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .dungeon-card-desc {
+    font-size: 14px;
+    color: var(--fog);
+    line-height: 1.6;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 60px;
+    border-top: 1px solid var(--slate);
+    text-align: center;
+    background: var(--void);
+  }
+
+  .footer-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 22px;
+    color: var(--gold);
+    margin-bottom: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  .footer-tagline {
+    font-size: 16px;
+    color: var(--dim);
+    font-style: italic;
+    max-width: 520px;
+    margin: 0 auto 32px;
+  }
+
+  .footer-divider {
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+    margin: 24px auto;
+  }
+
+  .footer-meta {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--border);
+    text-transform: uppercase;
+  }
+
+  /* QUOTE BLOCK */
+  .lore-quote {
+    margin: 40px 0;
+    padding: 28px 36px;
+    border-left: 3px solid var(--blood);
+    background: linear-gradient(to right, rgba(139,26,26,0.05), transparent);
+    position: relative;
+  }
+
+  .lore-quote::before {
+    content: '"';
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 80px;
+    color: var(--blood);
+    opacity: 0.15;
+    position: absolute;
+    top: -10px;
+    left: 12px;
+    line-height: 1;
+  }
+
+  .lore-quote p {
+    font-size: 18px;
+    color: var(--pale);
+    font-style: italic;
+    font-weight: 300;
+    line-height: 1.8;
+    position: relative;
+    z-index: 1;
+  }
+
+  .lore-quote cite {
+    display: block;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--dim);
+    font-style: normal;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.1em;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--void); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--ether); }
+
+  /* HIGHLIGHT */
+  .hl-gold { color: var(--gold); }
+  .hl-blood { color: var(--blood); }
+  .hl-ether { color: var(--ether-bright); }
+
+  /* MOBILE */
+  @media (max-width: 900px) {
+    nav { display: none; }
+    main { margin-left: 0; }
+    section { padding: 60px 28px; }
+    .hero { padding: 80px 28px; }
+    .pillars-grid { grid-template-columns: 1fr; }
+    .class-card { grid-template-columns: 1fr; }
+    .combat-grid { grid-template-columns: 1fr; }
+    .boss-grid { grid-template-columns: 1fr; }
+    .faction-list { grid-template-columns: 1fr; }
+    .av-grid { grid-template-columns: 1fr; }
+    .dungeon-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-title">
+    <div class="nav-logo">Abyssal Depths</div>
+    Game Design Document
+  </div>
+  <div class="nav-section">Overview</div>
+  <a href="#vision">Vision & Tone</a>
+  <a href="#pillars">Design Pillars</a>
+  <div class="nav-section">Systems</div>
+  <a href="#combat">Combat System</a>
+  <a href="#movement">Movement</a>
+  <a href="#dungeons">Dungeon Systems</a>
+  <a href="#progression">Progression</a>
+  <div class="nav-section">Entities</div>
+  <a href="#classes">Playable Classes</a>
+  <a href="#enemies">Enemy Factions</a>
+  <a href="#bosses">Boss Encounters</a>
+  <div class="nav-section">Presentation</div>
+  <a href="#world">World Design</a>
+  <a href="#narrative">Narrative</a>
+  <a href="#av">Audio & Visual</a>
+</nav>
+
+<main>
+
+  <!-- HERO -->
+  <div class="hero" id="top">
+    <div class="hero-bg"></div>
+    <div class="rune-circle"></div>
+    <div class="rune-circle"></div>
+    <div class="rune-circle"></div>
+
+    <div class="hero-eyebrow">Game Design Document · v1.0</div>
+    <h1 class="hero-title">
+      Abyssal<br>Depths
+      <span>Where mastery is the only mercy</span>
+    </h1>
+    <p class="hero-subtitle">
+      A dark fantasy action RPG forged from the oppressive exploration of Hollow Knight
+      and the relentless stylistic combat of Devil May Cry — descend, master, conquer.
+    </p>
+    <div class="hero-tags">
+      <span class="tag crimson">Dark Fantasy</span>
+      <span class="tag arcane">Metroidvania</span>
+      <span class="tag gold">Action RPG</span>
+      <span class="tag">Character Action</span>
+      <span class="tag">Dungeon Crawler</span>
+      <span class="tag crimson">Class-Based</span>
+    </div>
+
+    <div class="scroll-hint">
+      <div class="scroll-line"></div>
+      Descend
+    </div>
+  </div>
+
+  <!-- VISION -->
+  <section id="vision">
+    <div class="section-label">01 — Creative Vision</div>
+    <h2 class="section-title">Tone, Atmosphere & <em>Philosophy</em></h2>
+    <div class="section-body">
+      <p>Abyssal Depths is built on a single foundational truth: <span class="hl-gold">the player's skill is the only currency that matters</span>. Not levels. Not statistics. Not grinding. Every encounter, every corridor, every boss arena is a mechanical question — and the answer is mastery.</p>
+      <p>The world feels ancient beyond memory. It is the sediment of collapsed civilizations — royal crypts swallowed by biomechanical temples, cathedrals grown over with eldritch organisms, machine-gods lying broken beneath oceans of ash. The player is not a hero descending into darkness. They are a <span class="hl-blood">stranger in a world that has forgotten the concept of mercy</span>.</p>
+      <p>Isolation. Curiosity. Dread. These are the three emotional pillars that govern every design decision — from the arc of a shadow on a distant corridor wall, to the way a dying boss's second phase music shifts from grandeur to desperation.</p>
+    </div>
+
+    <div class="lore-quote">
+      <p>The bells no longer ring in the drowned towers. Something vast and patient has learned to speak through the silence between heartbeats. We called it hunger. The ancients built temples to it.</p>
+      <cite>— Fragment recovered from the Ossuary of the Third Descent</cite>
+    </div>
+
+    <div class="section-body">
+      <p>The setting synthesizes <span class="hl-ether">medieval decay, eldritch horror, ancient arcane technology, and surreal architecture</span> into a unified visual language. Ruined aqueducts carry luminescent fluid through caverns the size of cities. Biomechanical constructs crawl through collapsed throne rooms. Every environment tells a story of something that was once magnificent — and was devoured.</p>
+    </div>
+  </section>
+
+  <!-- PILLARS -->
+  <section id="pillars">
+    <div class="section-label">02 — Design Pillars</div>
+    <h2 class="section-title">Core <em>Pillars</em></h2>
+    <div class="section-body">
+      <p>Six interlocking design pillars govern every decision in Abyssal Depths. When conflict arises between systems, these pillars serve as the arbitrating authority — in this exact priority order.</p>
+    </div>
+    <div class="pillars-grid">
+      <div class="pillar" style="--pillar-color: var(--blood)">
+        <div class="pillar-num">I</div>
+        <div class="pillar-title">Skill Supremacy</div>
+        <p class="pillar-desc">Victory is earned through mechanical understanding, not stat accumulation. Every system must reward execution and punish passivity.</p>
+      </div>
+      <div class="pillar" style="--pillar-color: var(--ether-bright)">
+        <div class="pillar-num">II</div>
+        <div class="pillar-title">Fluid Momentum</div>
+        <p class="pillar-desc">Combat and movement form a single continuous language. Interrupting momentum should always feel like a player choice, never a system failure.</p>
+      </div>
+      <div class="pillar" style="--pillar-color: var(--gold)">
+        <div class="pillar-num">III</div>
+        <div class="pillar-title">Discovery Over Direction</div>
+        <p class="pillar-desc">Minimal handholding. The world reveals itself to those who explore it honestly. Secrets should feel earned, not scheduled.</p>
+      </div>
+      <div class="pillar" style="--pillar-color: var(--ember)">
+        <div class="pillar-num">IV</div>
+        <div class="pillar-title">Oppressive Atmosphere</div>
+        <p class="pillar-desc">The world must feel dangerous, ancient, and unknowable. Every visual, audio, and environmental decision reinforces existential dread.</p>
+      </div>
+      <div class="pillar" style="--pillar-color: var(--jade)">
+        <div class="pillar-num">V</div>
+        <div class="pillar-title">Risk & Reward</div>
+        <p class="pillar-desc">Every path forward has a cost and a prize. Players must make meaningful choices under pressure. Greed should sometimes be rewarded.</p>
+      </div>
+      <div class="pillar" style="--pillar-color: var(--silver)">
+        <div class="pillar-num">VI</div>
+        <div class="pillar-title">Build Diversity</div>
+        <p class="pillar-desc">RPG progression must enable wildly different playstyles without trivializing difficulty. No build should be strictly correct.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMBAT -->
+  <section id="combat">
+    <div class="section-label">03 — Combat Design</div>
+    <h2 class="section-title">The Art of <em>Controlled Violence</em></h2>
+    <div class="section-body">
+      <p>Combat in Abyssal Depths is a performance. Skilled players conduct fights like composers — building pressure, exploiting openings, chaining techniques across weapons and abilities in sequences that are both mechanically optimal and visually spectacular. <span class="hl-gold">The combo ranking system rewards aggression, variation, and damage avoidance simultaneously</span>, creating constant incentive to push into danger.</p>
+      <p>Enemy AI is designed to punish passive play. Enemies read hesitation and escalate pressure. Bosses evolve their attack patterns mid-fight, demanding that players adapt — not simply endure. <span class="hl-blood">Frame-tight defensive mechanics separate good players from exceptional ones</span>: a perfect parry at the edge of an attack window yields rewards that make the risk worth taking.</p>
+    </div>
+
+    <div class="rank-showcase">
+      <div class="rank-row">
+        <div class="rank-letter" style="color: var(--gold-bright)">S</div>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="--rank-color: var(--gold-bright); --w: 96%; --delay: 0.1s; width: 96%"></div></div>
+        <div class="rank-desc">Stylish Sovereign — absolute mastery</div>
+      </div>
+      <div class="rank-row">
+        <div class="rank-letter" style="color: var(--ether-bright)">A</div>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="--rank-color: var(--ether-bright); --w: 76%; --delay: 0.2s; width: 76%"></div></div>
+        <div class="rank-desc">Abyssal — fluid and punishing</div>
+      </div>
+      <div class="rank-row">
+        <div class="rank-letter" style="color: var(--ember)">B</div>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="--rank-color: var(--ember); --w: 56%; --delay: 0.3s; width: 56%"></div></div>
+        <div class="rank-desc">Brutal — aggressive momentum</div>
+      </div>
+      <div class="rank-row">
+        <div class="rank-letter" style="color: var(--fog)">C</div>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="--rank-color: var(--fog); --w: 36%; --delay: 0.4s; width: 36%"></div></div>
+        <div class="rank-desc">Crude — mechanical but tentative</div>
+      </div>
+      <div class="rank-row">
+        <div class="rank-letter" style="color: var(--dim)">D</div>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="--rank-color: var(--dim); --w: 18%; --delay: 0.5s; width: 18%"></div></div>
+        <div class="rank-desc">Dust — the abyss is not impressed</div>
+      </div>
+    </div>
+
+    <div class="combat-grid">
+      <div class="combat-block" style="--block-color: var(--blood)">
+        <div class="combat-block-title">Offensive Mechanics</div>
+        <ul class="combat-items">
+          <li>Animation canceling across all weapon types</li>
+          <li>Air combos and aerial juggling</li>
+          <li>Launcher attacks into aerial extensions</li>
+          <li>Weapon switching mid-combo without interruption</li>
+          <li>Momentum-driven combo scaling</li>
+          <li>Posture/stagger system with break states</li>
+          <li>Execution threshold triggers</li>
+        </ul>
+      </div>
+      <div class="combat-block" style="--block-color: var(--ether-bright)">
+        <div class="combat-block-title">Defensive Mechanics</div>
+        <ul class="combat-items">
+          <li>Precision dodge with directional i-frames</li>
+          <li>Perfect parry: frame-tight timing window</li>
+          <li>Counter-attack chains post-parry</li>
+          <li>Dash canceling through recovery frames</li>
+          <li>Guard crush and guard break system</li>
+          <li>Deflection absorption for projectiles</li>
+          <li>Environmental positioning as defensive tool</li>
+        </ul>
+      </div>
+      <div class="combat-block" style="--block-color: var(--gold)">
+        <div class="combat-block-title">Style Ranking Factors</div>
+        <ul class="combat-items">
+          <li>Attack variation — no repeat moves consecutively</li>
+          <li>Aggression — sustained offensive pressure</li>
+          <li>Precision — parries, perfect dodges, counters</li>
+          <li>Damage avoidance — zero-hit bonuses</li>
+          <li>Aerial presence — air time combat</li>
+          <li>Weapon diversity — cross-class tool usage</li>
+        </ul>
+      </div>
+      <div class="combat-block" style="--block-color: var(--ember)">
+        <div class="combat-block-title">Boss AI Architecture</div>
+        <ul class="combat-items">
+          <li>Adaptive pressure pattern escalation</li>
+          <li>Multi-phase encounters with arena transitions</li>
+          <li>Pattern evolution in response to player aggression</li>
+          <li>Environmental hazard integration</li>
+          <li>Unique combat gimmicks per encounter</li>
+          <li>Desperation attacks in final phase</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOVEMENT -->
+  <section id="movement">
+    <div class="section-label">04 — Movement System</div>
+    <h2 class="section-title">Fluid <em>Traversal</em></h2>
+    <div class="section-body">
+      <p>Movement is not separate from combat — it is combat. <span class="hl-gold">Every traversal ability doubles as a combat tool</span>, and every combat technique can be expressed through movement. The distinction between exploration and fighting dissolves in the hands of a skilled player.</p>
+      <p>Traversal abilities unlock progressively, true to metroidvania tradition — but each ability also opens up combat options that redefine how the player engages with the systems they already know. The air dash that bypasses a chasm also becomes a combo extender mid-fight. The wall jump that reaches a hidden ledge also repositions the player during a boss's vulnerability window.</p>
+    </div>
+
+    <div class="combat-grid">
+      <div class="combat-block" style="--block-color: var(--ether-bright)">
+        <div class="combat-block-title">Core Movement</div>
+        <ul class="combat-items">
+          <li>Dash — ground and aerial, directional</li>
+          <li>Double jump with momentum preservation</li>
+          <li>Wall jump and wall cling</li>
+          <li>Slide — low-profile with hitbox reduction</li>
+          <li>Momentum preservation through air</li>
+          <li>Combat-integrated sprint system</li>
+        </ul>
+      </div>
+      <div class="combat-block" style="--block-color: var(--jade)">
+        <div class="combat-block-title">Unlockable Traversal</div>
+        <ul class="combat-items">
+          <li>Grappling hook — precise momentum swing</li>
+          <li>Air dash — zero-gravity burst direction</li>
+          <li>Void step — short-range blink through thin barriers</li>
+          <li>Abyssal anchor — rapid vertical descent</li>
+          <li>Chain grapple — multi-target sequence</li>
+          <li>Spectral sprint — brief phasing through enemies</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- DUNGEONS -->
+  <section id="dungeons">
+    <div class="section-label">05 — Dungeon Systems</div>
+    <h2 class="section-title">Semi-Procedural <em>Depths</em></h2>
+    <div class="section-body">
+      <p>Dungeons in Abyssal Depths occupy the space between handcrafted artistry and procedural unpredictability. <span class="hl-gold">The macro-structure of each region is carefully designed</span> — its visual identity, narrative significance, faction, and boss are fixed. But within that structure, room configurations, enemy placements, hazard types, trap arrangements, and event triggers shift between runs.</p>
+      <p>This creates a dual effect: players develop genuine familiarity with a region's character and danger, while <span class="hl-ether">never feeling fully safe</span>. Something is always different. The patrolling corrupted knight may take a different route. The collapse trap that ended the last run may not trigger the same way. A merchant might appear where a dead end once stood.</p>
+    </div>
+    <div class="dungeon-grid">
+      <div class="dungeon-card">
+        <span class="dungeon-icon">⚗</span>
+        <div class="dungeon-card-title">Curse & Corruption</div>
+        <p class="dungeon-card-desc">Entering cursed zones applies stacking negative modifiers — reduced healing, increased enemy aggression, or reversed controls. Cleansing requires specific rituals or items.</p>
+      </div>
+      <div class="dungeon-card">
+        <span class="dungeon-icon">🜏</span>
+        <div class="dungeon-card-title">Relics</div>
+        <p class="dungeon-card-desc">Game-altering artifacts that dramatically modify mechanics. Some grant overwhelming power with severe drawbacks. Others reshape the ruleset of an entire run.</p>
+      </div>
+      <div class="dungeon-card">
+        <span class="dungeon-icon">⚔</span>
+        <div class="dungeon-card-title">Elite Spawns</div>
+        <p class="dungeon-card-desc">Randomly placed elite enemies appear with unique buffs and modified attack patterns. Killing them yields rare resources and upgrades — but they are not required.</p>
+      </div>
+      <div class="dungeon-card">
+        <span class="dungeon-icon">🜁</span>
+        <div class="dungeon-card-title">Resource Extraction</div>
+        <p class="dungeon-card-desc">Death risks losing carried loot. Players must weigh pushing deeper against returning to preserve gains. High-tier resources only drop in deep, dangerous zones.</p>
+      </div>
+      <div class="dungeon-card">
+        <span class="dungeon-icon">🝰</span>
+        <div class="dungeon-card-title">World Events</div>
+        <p class="dungeon-card-desc">Rare in-region events appear randomly — a collapsed merchant, a ritual in progress, a dormant ancient machine reactivating. These yield unique outcomes and lore.</p>
+      </div>
+      <div class="dungeon-card">
+        <span class="dungeon-icon">☽</span>
+        <div class="dungeon-card-title">Nightmare Zones</div>
+        <p class="dungeon-card-desc">Optional challenge rooms hidden behind obscure triggers. Nightmare difficulty with modified enemy behavior and unique reward pools for players seeking maximum challenge.</p>
+      </div>
+      <div class="dungeon-card">
+        <span class="dungeon-icon">⬡</span>
+        <div class="dungeon-card-title">Treasure Vaults</div>
+        <p class="dungeon-card-desc">High-risk locked rooms with powerful loot behind consecutive challenge encounters. Failure collapses the vault and scatters its contents into harder-to-reach positions.</p>
+      </div>
+      <div class="dungeon-card">
+        <span class="dungeon-icon">✦</span>
+        <div class="dungeon-card-title">Imprisoned NPCs</div>
+        <p class="dungeon-card-desc">Randomly placed imprisoned characters yield unique dialogue, merchant inventories, quests, or permanent upgrades when freed. Some carry critical lore fragments.</p>
+      </div>
+      <div class="dungeon-card">
+        <span class="dungeon-icon">⚡</span>
+        <div class="dungeon-card-title">Dynamic Hazards</div>
+        <p class="dungeon-card-desc">Environmental dangers shift per run — collapsing floors, acid floods, moving blade arrays, awakened traps. Positions and activation states are semi-randomized.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROGRESSION -->
+  <section id="progression">
+    <div class="section-label">06 — RPG Progression</div>
+    <h2 class="section-title">Depth Without <em>Trivialization</em></h2>
+    <div class="section-body">
+      <p>Progression in Abyssal Depths must never become a substitute for skill. <span class="hl-gold">Every upgrade makes the player more expressive, not more invulnerable</span>. New techniques, abilities, and tools open up combat possibilities. But enemies scale with the world — and the world is always dangerous.</p>
+      <p>Temporary dungeon upgrades layer over permanent character progression, creating a bifurcated system: the core character grows slowly and meaningfully, while dungeon runs offer fast, volatile power spikes that expire or carry risk. <span class="hl-ether">Relics from dungeons can permanently alter class traits</span> if specific conditions are met — creating emergent build possibilities that are discovered, not prescribed.</p>
+      <p>Build diversity is enforced by design: equipment sets, relic combinations, and skill trees are built to create <span class="hl-blood">mutual exclusion and meaningful tradeoffs</span> rather than universal optimal paths. A Crimson Executioner going all-in on hemorrhage chains plays nothing like one who takes the counter-redirect variant — and both are viable.</p>
+    </div>
+  </section>
+
+  <!-- CLASSES -->
+  <section id="classes">
+    <div class="section-label">07 — Playable Classes</div>
+    <h2 class="section-title">Five <em>Combat Philosophies</em></h2>
+    <div class="section-body">
+      <p>Each class is a complete reimagining of how the game's systems are engaged — not a variation on a theme, but a fundamentally different relationship with combat, movement, resource management, and risk. Switching classes should feel like playing a different game.</p>
+    </div>
+    <div class="classes-list">
+      <div class="class-card" style="--class-color: var(--ether-bright)">
+        <div class="class-accent" style="background-color: var(--ether-bright)">
+          <div class="class-name">Abyssal Knight</div>
+          <div class="class-archetype">Void-Infused Swordmaster</div>
+          <div class="class-num">I</div>
+        </div>
+        <div class="class-body">
+          <p class="class-desc">The game's mechanical baseline — deceptively difficult to master. The Abyssal Knight excels at combo extensions through void cancels, adaptive offense that responds to enemy aggression shifts, and seamless integration of mobility into damage windows. Their void energy meter enables brief bursts of hyper-offensiveness when sustained pressure builds it. <em>Designed to reward players who internalize the full combat system.</em></p>
+          <div class="class-tags">
+            <span class="class-tag">Balanced</span>
+            <span class="class-tag">Combo Extension</span>
+            <span class="class-tag">Void Energy</span>
+            <span class="class-tag">Mobility Canceling</span>
+            <span class="class-tag">Adaptive</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="class-card" style="--class-color: var(--blood)">
+        <div class="class-accent" style="background-color: var(--blood)">
+          <div class="class-name">Crimson Executioner</div>
+          <div class="class-archetype">Blood-Fueled Berserker</div>
+          <div class="class-num">II</div>
+        </div>
+        <div class="class-body">
+          <p class="class-desc">Relentless, punishing, and unforgiving to play passively. Dual scythes enable devastating combo chains where the player's own HP becomes a resource — spending blood fuels stronger attacks, but overextension is lethal. The Executioner must maintain constant forward pressure or lose their hemorrhage stacks and momentum. <em>Built for players who want pure aggression with real stakes.</em></p>
+          <div class="class-tags">
+            <span class="class-tag">Extreme Aggression</span>
+            <span class="class-tag">HP as Resource</span>
+            <span class="class-tag">Hemorrhage Chains</span>
+            <span class="class-tag">Execution Triggers</span>
+            <span class="class-tag">High Risk/Reward</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="class-card" style="--class-color: var(--arcane)">
+        <div class="class-accent" style="background-color: var(--arcane)">
+          <div class="class-name">Void Arcanist</div>
+          <div class="class-archetype">Gravity & Ether Manipulator</div>
+          <div class="class-num">III</div>
+        </div>
+        <div class="class-body">
+          <p class="class-desc">Fragile but capable of the highest damage ceiling in the game. The Arcanist reshapes the battlefield — gravity inversions suspend enemies, portals redirect projectiles, forbidden energy creates lingering hazard zones. Positioning and preparation define every encounter. <em>Demands spatial intelligence and planning under pressure; mistakes are immediately fatal.</em></p>
+          <div class="class-tags">
+            <span class="class-tag">Battlefield Control</span>
+            <span class="class-tag">Gravity Manipulation</span>
+            <span class="class-tag">Portal Mechanics</span>
+            <span class="class-tag">Glass Cannon</span>
+            <span class="class-tag">Forbidden Energy</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="class-card" style="--class-color: var(--ember)">
+        <div class="class-accent" style="background-color: var(--ember)">
+          <div class="class-name">Mechanical Hunter</div>
+          <div class="class-archetype">Gadgeteer & Hybrid Fighter</div>
+          <div class="class-num">IV</div>
+        </div>
+        <div class="class-body">
+          <p class="class-desc">The most mobile class in the roster — constantly in motion, leveraging firearms, deployable traps, and transforming weapons that shift between melee and ranged configurations mid-combo. The Hunter turns the environment into an extension of their arsenal, using trap placement and gadget timing as core combat structure. <em>Rewards creative improvisation and multi-tool mastery.</em></p>
+          <div class="class-tags">
+            <span class="class-tag">Hybrid Melee/Ranged</span>
+            <span class="class-tag">Transforming Weapons</span>
+            <span class="class-tag">Trap Deployment</span>
+            <span class="class-tag">High Mobility</span>
+            <span class="class-tag">Gadget Systems</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="class-card" style="--class-color: var(--silver)">
+        <div class="class-accent" style="background-color: var(--silver)">
+          <div class="class-name">Umbral Monk</div>
+          <div class="class-archetype">Counter & Precision Master</div>
+          <div class="class-num">V</div>
+        </div>
+        <div class="class-body">
+          <p class="class-desc">No weapon drawn until the enemy attacks. The Umbral Monk's entire combat philosophy is reactive precision — reading attack patterns, timing parries to the frame, breaking enemy stance through counter-chains, and punishing aggression with devastating counter-strikes. The widest parry window in the game, but the smallest error margin on everything else. <em>For players who want combat to feel like a dialogue.</em></p>
+          <div class="class-tags">
+            <span class="class-tag">Parry-Focused</span>
+            <span class="class-tag">Counter Chains</span>
+            <span class="class-tag">Stance Breaking</span>
+            <span class="class-tag">Reactive Combat</span>
+            <span class="class-tag">Pattern Reading</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENEMIES -->
+  <section id="enemies">
+    <div class="section-label">08 — Enemy Design</div>
+    <h2 class="section-title">The <em>Hostile Abyss</em></h2>
+    <div class="section-body">
+      <p>Every enemy faction in Abyssal Depths has a distinct visual identity, behavioral philosophy, and mechanical language. Encountering a new enemy type should require <span class="hl-gold">active study and adaptation</span> — not pattern recognition from other games. The first encounter should feel dangerous. The tenth should feel like a mastered conversation.</p>
+    </div>
+    <div class="faction-list">
+      <div class="faction-item">
+        <div class="faction-icon">⚔</div>
+        <div>
+          <div class="faction-name">Corrupted Royal Knights</div>
+          <p class="faction-desc">Former honor guard, now vessels of void. Highly aggressive, disciplined attack patterns, shield-break mechanics. They remember how to fight — the void just removed the reluctance.</p>
+        </div>
+      </div>
+      <div class="faction-item">
+        <div class="faction-icon">⚙</div>
+        <div>
+          <div class="faction-name">Biomechanical Monstrosities</div>
+          <p class="faction-desc">Organic tissue fused with ancient machinery. Attack patterns mix mechanical predictability with organic unpredictability — learning which limb is which is part of the fight.</p>
+        </div>
+      </div>
+      <div class="faction-item">
+        <div class="faction-icon">🜃</div>
+        <div>
+          <div class="faction-name">Ancient Machine Guardians</div>
+          <p class="faction-desc">Pre-collapse automated sentinels. Precise, patient, telegraphed attacks that become overwhelming in coordination. Their logic can be learned — then exploited.</p>
+        </div>
+      </div>
+      <div class="faction-item">
+        <div class="faction-icon">☽</div>
+        <div>
+          <div class="faction-name">Hollow Priests</div>
+          <p class="faction-desc">Devotees of something that answered. Now empty vessels channeling eldritch signal. Field-modifier enemies that alter environmental rules — gravity, sound, visibility.</p>
+        </div>
+      </div>
+      <div class="faction-item">
+        <div class="faction-icon">🦠</div>
+        <div>
+          <div class="faction-name">Eldritch Parasites</div>
+          <p class="faction-desc">Swarm intelligence with hive coordination. Individually weak but tactically sophisticated. Kill the node or fight a thousand iterations of the same mistake.</p>
+        </div>
+      </div>
+      <div class="faction-item">
+        <div class="faction-icon">⚗</div>
+        <div>
+          <div class="faction-name">Failed Experiments</div>
+          <p class="faction-desc">The results of the ancients' ambition. Unpredictable, erratic, frequently dangerous to themselves. Their attack patterns are corrupted — expect the unexpected.</p>
+        </div>
+      </div>
+      <div class="faction-item">
+        <div class="faction-icon">✦</div>
+        <div>
+          <div class="faction-name">Spectral Assassins</div>
+          <p class="faction-desc">Phase between visibility states. Strike from angles that require environmental awareness. Defeating them requires learning the tells of their materialization pattern.</p>
+        </div>
+      </div>
+      <div class="faction-item">
+        <div class="faction-icon">🌊</div>
+        <div>
+          <div class="faction-name">Giant Abyssal Predators</div>
+          <p class="faction-desc">Something that lived at the bottom before there was a bottom. Arena-scale encounters with environmental repositioning requirements. Treated as mini-bosses even in common areas.</p>
+        </div>
+      </div>
+      <div class="faction-item">
+        <div class="faction-icon">🜏</div>
+        <div>
+          <div class="faction-name">Broken Artificial Gods</div>
+          <p class="faction-desc">The ancients' crowning achievement, now shattered. Pieces still function — dangerously. Puzzle-adjacent encounters requiring multi-part neutralization sequences.</p>
+        </div>
+      </div>
+      <div class="faction-item">
+        <div class="faction-icon">⬡</div>
+        <div>
+          <div class="faction-name">Fanatical Machine-Cultists</div>
+          <p class="faction-desc">Humans who merged willingly with the old infrastructure. Coordinated unit tactics, shared health pools, sacrifice abilities that empower their allies. Threatening at range and close.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BOSSES -->
+  <section id="bosses">
+    <div class="section-label">09 — Boss Encounters</div>
+    <h2 class="section-title">Cinematic <em>Skill Checks</em></h2>
+    <div class="section-body">
+      <p>Bosses are not gatekeepers — they are arguments. Each one presents a mechanical thesis about a specific aspect of the combat system, and <span class="hl-blood">defeating them requires engaging with that argument honestly</span>. There is no stat threshold that bypasses a boss's design. There is only understanding.</p>
+      <p>Every major boss has cinematic visual presentation tied directly to their lore, <span class="hl-gold">multi-phase transitions that feel earned rather than arbitrary</span>, and a final phase that demands everything the player has learned about the fight be applied simultaneously.</p>
+    </div>
+    <div class="boss-grid">
+      <div class="boss-card">
+        <div class="boss-name">The Sovereign Without Crown</div>
+        <div class="boss-title">First Warden of the Drowned Palace</div>
+        <p class="boss-desc">Once the last king's personal executioner. Now void-consumed, their judicial greatsword leaves afterimages that persist as active hitboxes. Phase two collapses the arena floor, introducing a vertical combat plane. Tests: parry timing, aerial repositioning, reading multi-hit combos.</p>
+        <div class="boss-phases">
+          <div class="phase-dot active"></div>
+          <div class="phase-dot active"></div>
+          <div class="phase-dot"></div>
+        </div>
+      </div>
+      <div class="boss-card">
+        <div class="boss-name">Vael, the Breathing Architecture</div>
+        <div class="boss-title">Living Temple — Biomechanical Colossus</div>
+        <p class="boss-desc">A cathedral that became self-aware when the old machines infected its foundation stones. The arena is its body — walls breathe, floors convulse, pillars attack. Three phases: dormant geometry, partial awakening, full consciousness with global area attacks. Tests: environmental reading, dynamic positioning.</p>
+        <div class="boss-phases">
+          <div class="phase-dot active"></div>
+          <div class="phase-dot active"></div>
+          <div class="phase-dot active"></div>
+        </div>
+      </div>
+      <div class="boss-card">
+        <div class="boss-name">The Ashen Chorus</div>
+        <div class="boss-title">Four-Voice Hollow Priest Conclave</div>
+        <p class="boss-desc">Four priests, each controlling a different field modifier — gravity, visibility, timing distortion, hitbox inversion. Alive together, they compound effects. Must be eliminated in a specific order to prevent resurrection. Tests: priority targeting, field modifier adaptation, split attention management.</p>
+        <div class="boss-phases">
+          <div class="phase-dot active"></div>
+          <div class="phase-dot active"></div>
+          <div class="phase-dot"></div>
+        </div>
+      </div>
+      <div class="boss-card">
+        <div class="boss-name">SENTINEL-0, the First Prohibition</div>
+        <div class="boss-title">Ancient Machine Arbiter</div>
+        <p class="boss-desc">A pre-collapse automated judicial AI in a body the size of a fortress gate. Attacks are perfectly telegraphed but require positional solutions rather than evasion. Phase three activates emergency protocols and abandons logic entirely. Tests: pattern decoding, spatial problem-solving, breaking away from learned responses.</p>
+        <div class="boss-phases">
+          <div class="phase-dot active"></div>
+          <div class="phase-dot active"></div>
+          <div class="phase-dot active"></div>
+        </div>
+      </div>
+      <div class="boss-card">
+        <div class="boss-name">Erethis, the Unfinished God</div>
+        <div class="boss-title">Final Experiment — Half-Born Deity</div>
+        <p class="boss-desc">The ancients attempted to construct divinity. They almost succeeded. Erethis exists in two states simultaneously — physical and spectral — and attacks from both planes at once. The player must track presence across overlapping realities while maintaining offensive output. Tests: all combat systems simultaneously.</p>
+        <div class="boss-phases">
+          <div class="phase-dot active"></div>
+          <div class="phase-dot active"></div>
+          <div class="phase-dot active"></div>
+        </div>
+      </div>
+      <div class="boss-card">
+        <div class="boss-name">The Unmoored Bell</div>
+        <div class="boss-title">Abyssal Acoustic Predator</div>
+        <p class="boss-desc">A deep-sea intelligence that migrated upward when the lower levels flooded with void. Attacks operate on sound wave physics — damage radiates outward from impact points. The arena fills with resonance pools that amplify or nullify damage. Tests: spatial awareness, unconventional hitbox reading, resource control under pressure.</p>
+        <div class="boss-phases">
+          <div class="phase-dot active"></div>
+          <div class="phase-dot active"></div>
+          <div class="phase-dot"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WORLD -->
+  <section id="world">
+    <div class="section-label">10 — World Design</div>
+    <h2 class="section-title">The <em>Interconnected</em> Ruin</h2>
+    <div class="section-body">
+      <p>The world of Abyssal Depths is a single, fully interconnected structure — the accumulated ruin of multiple civilizations that rose, collapsed, and were swallowed by whatever came before them. <span class="hl-gold">No region is isolated.</span> Every zone connects to at least two others through hidden pathways, traversal-gated passages, or destructible walls.</p>
+      <p>Regions are defined not by biome but by the civilization that once inhabited them — each with a distinct architectural language, enemy philosophy, and environmental hazard type. The <em>Drowned Palace</em> is sunken royalty, half-submerged in void-tainted water. The <em>Machina Ossuary</em> is a graveyard of ancient automated systems, still partially operational. The <em>Bleeding Spires</em> are the remains of an order that worshipped something that answered. <span class="hl-ether">Each region tells its story entirely through what remains.</span></p>
+    </div>
+
+    <div class="lore-quote">
+      <p>The map does not show what is below the map. It never has. Whatever built the Seventh Layer built it before the concept of cartography existed — before the concept of warning.</p>
+      <cite>— Wall inscription, undeciphered orientation, Sublevel Archives</cite>
+    </div>
+  </section>
+
+  <!-- NARRATIVE -->
+  <section id="narrative">
+    <div class="section-label">11 — Narrative Design</div>
+    <h2 class="section-title">Environmental <em>Storytelling</em></h2>
+    <div class="section-body">
+      <p>There is no narrator. There are no cutscenes longer than thirty seconds. There is no character who explains the lore. <span class="hl-gold">The world is the story</span>, and the player constructs their understanding of it through active exploration and observation.</p>
+      <p>Lore delivery systems: murals in ruined throne rooms that depict events out of chronological order, cryptic dialogue from NPCs who refuse to explain themselves, item descriptions that reference events without context, environmental configurations that imply catastrophic histories, and rare hidden chambers containing dense fragments that reward obsessive exploration.</p>
+      <p>The narrative structure mirrors the world structure — <span class="hl-blood">fragmentary, non-linear, demanding active reconstruction</span>. Players who want to understand what happened will need to find every piece. Players who simply want to fight through the darkness will have a complete emotional experience without ever knowing the names of the civilizations they're walking through.</p>
+    </div>
+  </section>
+
+  <!-- AUDIO VISUAL -->
+  <section id="av">
+    <div class="section-label">12 — Presentation</div>
+    <h2 class="section-title">Audio & Visual <em>Direction</em></h2>
+    <div class="section-body">
+      <p>Every visual and audio decision must reinforce the same emotional truth: <span class="hl-gold">you are small, this place is ancient, and something enormous once lived here and left marks.</span></p>
+    </div>
+    <div class="av-grid">
+      <div>
+        <div class="av-block-title">Visual Direction</div>
+        <ul class="av-list">
+          <li>Hand-drawn 2D environments with frame-by-frame animation</li>
+          <li>Dark gothic fantasy — heavy blacks, deep contrast, selective color emphasis</li>
+          <li>Massive environmental scale — structures that dwarf the player sprite</li>
+          <li>Atmospheric particles: fog, ash, rain, bioluminescent spores</li>
+          <li>Biomechanical architecture — organic growth over ancient machinery</li>
+          <li>Insect, deep-sea, and religious imagery fused in creature design</li>
+          <li>Hit feedback through screen shake, chromatic aberration, motion blur</li>
+          <li>Particle systems for every combat interaction — impacts, parries, dodges</li>
+          <li>Dynamic lighting that shifts with environmental state changes</li>
+        </ul>
+      </div>
+      <div>
+        <div class="av-block-title">Audio Direction</div>
+        <ul class="av-list">
+          <li>Dark ambient — sustained drone textures, resonant low-frequency base</li>
+          <li>Processed choir elements that suggest language without being intelligible</li>
+          <li>Industrial undertones — machinery, rust, pressurized release sounds</li>
+          <li>Melancholic orchestration — strings, brass, occasional solo woodwind</li>
+          <li>Minimalist tension tracks during exploration — space between sounds</li>
+          <li>Intense, percussive boss themes — escalating into final phase intensity</li>
+          <li>Dynamic music system — combat detection blends tracks in real time</li>
+          <li>Positional audio — enemy sounds telegraph attack direction</li>
+          <li>Distinct impact sounds per weapon type, hit surface, and enemy material</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-title">Abyssal Depths</div>
+    <p class="footer-tagline">Brutal. Rewarding. Mysterious. The abyss demands mastery — and it remembers who answered.</p>
+    <div class="footer-divider"></div>
+    <div class="footer-meta">Game Design Document · Confidential · v1.0</div>
+  </footer>
+
+</main>
+
+<script>
+  // Active nav link on scroll
+  const sections = document.querySelectorAll('section[id], .hero[id]');
+  const navLinks = document.querySelectorAll('nav a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === '#' + entry.target.id) {
+            link.classList.add('active');
+          }
+        });
+      }
+    });
+  }, { threshold: 0.3 });
+
+  sections.forEach(s => observer.observe(s));
+
+  // Smooth parallax on hero rune circles (subtle)
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY;
+    document.querySelectorAll('.rune-circle').forEach((el, i) => {
+      el.style.marginTop = (y * (0.04 + i * 0.02)) + 'px';
+    });
+  });
+</script>
+
+</body>
+</html>
