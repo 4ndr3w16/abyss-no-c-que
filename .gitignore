@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+*.hypothesis/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+virtualenv/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.iml
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.vs/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+*.lnk
+
+# Logs & temp
+*.log
+*.tmp
+*.temp
+*.bak
+*.sqlite
+*.db
+
+# Game specific
+saves/
+*.save
+*.sav
