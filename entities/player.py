@@ -13,6 +13,8 @@ class PlayerState:
     FALL     = "fall"
     DASH     = "dash"
     ATTACK   = "attack"
+    HEAVY    = "heavy"
+    AIR_ATK  = "air_atk"
     FALL_ATK = "fall_atk"
     HITSTUN  = "hitstun"
     DEAD     = "dead"

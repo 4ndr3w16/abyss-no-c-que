@@ -45,6 +45,24 @@ PLAYER_ATK_ACTIVE_END   = 0.15  # hitbox disappears
 PLAYER_ATK_COOLDOWN  = 0.22
 PLAYER_ATK_REACH     = 58     # hitbox half-width from player center
 PLAYER_ATK_HEIGHT    = 40
+
+# Heavy attack
+PLAYER_HEAVY_DAMAGE    = 35
+PLAYER_HEAVY_DURATION  = 0.35
+PLAYER_HEAVY_ACTIVE_START = 0.15
+PLAYER_HEAVY_ACTIVE_END   = 0.28
+PLAYER_HEAVY_COOLDOWN  = 0.5
+PLAYER_HEAVY_REACH     = 70
+PLAYER_HEAVY_HEIGHT    = 48
+HEAVY_KNOCKBACK        = 300   # horizontal push on enemy
+
+# Air attack
+PLAYER_AIR_ATK_DAMAGE  = 22
+PLAYER_AIR_ATK_DURATION = 0.25
+PLAYER_AIR_ATK_REACH   = 60
+PLAYER_AIR_ATK_HEIGHT  = 50
+AIR_LAUNCH_VEL         = -450  # upward velocity applied to launched enemies
+
 COMBO_WINDOW         = 0.45   # time after hit to continue combo
 MAX_COMBO            = 4      # hits before reset
 COMBO_DAMAGE_MULT    = [1.0, 1.0, 1.2, 1.6]  # per hit in combo
